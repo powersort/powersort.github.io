@@ -195,73 +195,74 @@
         </div>
       </div>
 
-      <!-- ---- interactive playground (replaces the static animation) ---- -->
+      <!-- ---- interactive playground: the run stack, box by box (playground.js) ---- -->
       <div class="playground-block" id="playground">
         <h3 class="sub-heading">Try it &mdash; Powersort in action</h3>
-        <p class="section-intro">Runs are discovered one at a time and kept on a <strong>run stack</strong>. When a new
-      boundary's power is <em>no larger</em> than the power on top of the stack, the two topmost
-      runs merge — building the merge tree from left to right. Try your own input and watch the
-      policy decide.</p>
+        <p class="section-intro">Runs are discovered one at a time and kept on a <strong>run stack</strong>,
+      drawn here as boxes: each box reaches up to the power of its run’s left boundary, and the stack
+      keeps the boxes descending from left to right. A new run whose box would hang over a gap has to
+      wait while the boxes to its left merge; these merges build the merge tree, node by node, on top of
+      the balanced tree from above, which stays faintly in the background. Try your own input and watch the policy decide.</p>
       </div>
-      <div class="playground-wide">
-<div class="controls" role="group" aria-label="Input controls">
+      <div class="playground-wide" id="pgRoot">
+  <div class="controls pg-input" role="group" aria-label="Input">
     <label class="ctl">
       <span>preset</span>
-      <select id="presetSelect">
+      <select id="pgPreset">
         <option value="hero">showcase example (10 runs)</option>
         <option value="slides">talk example (6 runs)</option>
         <option value="colab">notebook example (12 runs)</option>
-        <option value="random">random values</option>
-        <option value="fewruns">a few long runs</option>
-        <option value="manyruns">many short runs</option>
-        <option value="organ">organ pipe</option>
-        <option value="sorted">already sorted</option>
-      </select>
-    </label>
-    <label class="ctl">
-      <span>mode</span>
-      <select id="modeSelect">
-        <option value="runs">run lengths</option>
-        <option value="values">array values</option>
+        <option value="few">a few long runs</option>
+        <option value="equal">16 equal runs</option>
+        <option value="many">many short runs (random)</option>
+        <option value="random">random lengths</option>
       </select>
     </label>
     <label class="ctl ctl-grow">
-      <span id="inputLabel">run lengths (comma-separated)</span>
-      <input id="dataInput" type="text" spellcheck="false" autocomplete="off"
-             value="5, 3, 3, 14, 1, 2">
+      <span>run lengths (comma-separated)</span>
+      <input id="pgLens" type="text" spellcheck="false" autocomplete="off" value="7, 3, 1, 1, 6, 16, 6, 1, 3, 6">
     </label>
-    <button id="applyBtn" class="btn btn-lime" type="button">load ↴</button>
+    <button id="pgLoad" class="btn btn-lime" type="button">load ↴</button>
   </div>
 
-  <div class="controls controls-play" role="group" aria-label="Playback controls">
-    <button id="playBtn" class="btn btn-cyan" type="button">▶ play</button>
-    <button id="backBtn" class="btn" type="button">‹ step</button>
-    <button id="stepBtn" class="btn" type="button">step ›</button>
-    <button id="resetBtn" class="btn" type="button">reset</button>
-    <label class="ctl ctl-speed">
-      <span>speed</span>
-      <input id="speedRange" type="range" min="0.3" max="3" step="0.1" value="1"
-             aria-label="Animation speed">
-    </label>
-    <p id="narration" class="narration" aria-live="polite">Press play to run Powersort.</p>
-  </div>
-
-  <div class="playground-grid">
+  <div class="pg-grid">
     <aside class="panel panel-code" aria-label="Powersort pseudocode">
       <div class="panel-title">powersort</div>
-      <pre id="codeBox"><code><span class="cl" id="cl1"> 1  <span class="code-keyword">def</span> <span class="code-func">powersort</span>(a):</span><span class="cl" id="cl2"> 2    n = len(a); i = <span class="code-number">0</span></span><span class="cl" id="cl3"> 3    runs = []</span><span class="cl" id="cl4"> 4    j = extend_run(a, i)</span><span class="cl" id="cl5"> 5    runs.append((i, j-i, <span class="code-number">0</span>)); i = j</span><span class="cl" id="cl6"> 6    <span class="code-keyword">while</span> i &lt; n:</span><span class="cl" id="cl7"> 7      j = extend_run(a, i)</span><span class="cl" id="cl8"> 8      p = power(runs[-<span class="code-number">1</span>], (i, j-i), n)</span><span class="cl" id="cl9"> 9      <span class="code-keyword">while</span> p &lt;= runs[-<span class="code-number">1</span>][<span class="code-number">2</span>]:</span><span class="cl" id="cl10">10        merge_topmost_2(a, runs)</span><span class="cl" id="cl11">11      runs.append((i, j-i, p)); i = j</span><span class="cl" id="cl12">12    <span class="code-keyword">while</span> len(runs) &gt;= <span class="code-number">2</span>:</span><span class="cl" id="cl13">13      merge_topmost_2(a, runs)</span></code></pre>      <p class="panel-note">complete code: <a href="https://tiny.cc/timsort" target="_blank" rel="noopener">tiny.cc/timsort</a></p>
+      <pre><code id="pgCode"></code></pre>
+      <div id="pgStack" class="pg-stack" aria-label="Run stack as (start, length, power); hover a run to highlight its box"></div>
+      <p class="panel-note">complete code: <a href="https://tiny.cc/timsort" target="_blank" rel="noopener">tiny.cc/timsort</a></p>
     </aside>
 
-    <div class="panel panel-stage">
-      <svg id="playSvg" viewBox="0 0 1200 640" preserveAspectRatio="xMidYMid meet"
-           role="img" aria-label="Visualization of the array as bars grouped into runs, boundary powers, and the merge tree being built left to right over the faint node powers of the virtual balanced tree."></svg>
+    <div class="pg-main">
+      <div class="panel panel-stage" id="pgStage" tabindex="0" aria-label="Animation; use the arrow keys to step">
+        <svg id="pgSvg" role="img" aria-label="Powersort’s run stack drawn as boxes, with the merge tree growing inside"></svg>
+      </div>
+      <div class="pg-transport" role="group" aria-label="Playback controls">
+        <button id="pgFirst" class="btn" type="button" aria-label="First step">⏮</button>
+        <button id="pgBack" class="btn" type="button">‹ step</button>
+        <button id="pgPlay" class="btn btn-cyan" type="button">▶ play</button>
+        <button id="pgStep" class="btn" type="button">step ›</button>
+        <button id="pgLast" class="btn" type="button" aria-label="Last step">⏭</button>
+        <label class="ctl ctl-speed"><span>speed</span>
+          <select id="pgSpeed"><option value="2300">slow</option><option value="1400" selected>normal</option><option value="650">fast</option></select>
+        </label>
+        <div class="pg-scrub"><input id="pgScrub" type="range" min="0" max="1" value="0" aria-label="Step"><span id="pgStepNo">0 / 0</span></div>
+      </div>
+      <p id="pgStatus" class="pg-caption" aria-live="polite">&nbsp;</p>
     </div>
+  </div>
 
-    <aside class="panel panel-stack" aria-label="Run stack">
-      <div class="panel-title">run stack</div>
-      <div id="stackBox" class="stack-box"></div>
-      <div class="stack-hint">newest run on top; merges fuse the two topmost entries</div>
-    </aside>
+  <div class="pg-legend">
+    <div><svg width="54" height="26" viewBox="0 0 54 26" aria-hidden="true"><g stroke="#0DEDF7" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="9" y1="17" x2="46" y2="17" stroke-width="3.5"/><path d="M 13 10 Q 5 17 13 24" stroke-width="2.5"/><path d="M 40 10 L 47 10 L 47 24 L 40 24" stroke-width="2.5"/></g><text x="27" y="8" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" font-weight="700" fill="#0DEDF7">3</text></svg>
+      <p><strong>Boundary:</strong> the midpoint interval (a,&nbsp;b] of two runs, at the depth of its power. A merge will happen here.</p></div>
+    <div><svg width="54" height="26" viewBox="0 0 54 26" aria-hidden="true"><rect x="3" y="5" width="48" height="8" rx="3" fill="#0DEDF7" fill-opacity=".38"/><line x1="24" y1="9" x2="9" y2="25" stroke="#0DEDF7" stroke-width="2" stroke-linecap="round"/><line x1="24" y1="9" x2="42" y2="25" stroke="#0DEDF7" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="9" r="5" fill="#0DEDF7" stroke="#001C6B" stroke-width="1.5"/></svg>
+      <p><strong>Merge:</strong> a node of the merge tree; the faint bar spans the merged run.</p></div>
+    <div><svg width="54" height="26" viewBox="0 0 54 26" aria-hidden="true"><rect x="2" y="2" width="22" height="23" rx="3" fill="#0DEDF7" fill-opacity=".12" stroke="#0DEDF7" stroke-opacity=".6" stroke-width="1.5"/><rect x="27" y="11" width="22" height="14" rx="3" fill="#0DEDF7" fill-opacity=".12" stroke="#0DEDF7" stroke-opacity=".6" stroke-width="1.5"/></svg>
+      <p><strong>Run on the stack:</strong> a box up to the power of its left boundary.</p></div>
+    <div><svg width="54" height="26" viewBox="0 0 54 26" aria-hidden="true"><defs><pattern id="pgLgH" patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)"><rect width="4" height="8" fill="#FFFF00"/></pattern></defs><rect x="2" y="6" width="22" height="9" fill="url(#pgLgH)" opacity=".5"/><rect x="2" y="15" width="22" height="10" rx="2" fill="#0DEDF7" fill-opacity=".12" stroke="#0DEDF7" stroke-opacity=".6" stroke-width="1.5"/><rect x="27" y="6" width="22" height="19" rx="3" fill="none" stroke="#FFFF00" stroke-width="2" stroke-dasharray="0.1 4" stroke-linecap="round"/></svg>
+      <p><strong>Waiting run</strong> (dotted): the gap below it must be filled by merges first.</p></div>
+    <div><svg width="54" height="26" viewBox="0 0 54 26" aria-hidden="true"><line x1="27" y1="2" x2="27" y2="25" stroke="#FFFF00" stroke-width="6" stroke-dasharray="6 4"/></svg>
+      <p><strong>Virtual end run</strong> of power 0: collapses what is left on the stack.</p></div>
   </div>
 
   <p class="demo-note">Note: for clarity this demo uses ascending runs only &mdash; real
@@ -287,10 +288,8 @@
          billions of times a day.</p>
     </div>
   </div>
+
       </div>
-
-
-      
 
       <!-- Node power formula -->
       <div class="formula-box">
@@ -1112,5 +1111,6 @@ For helper functions, see <a href="https://tiny.cc/timsort" target="_blank" rel=
 
 <script src="splash.js"></script>
 <script src="app.js"></script>
+<script src="playground.js"></script>
 </body>
 </html>
